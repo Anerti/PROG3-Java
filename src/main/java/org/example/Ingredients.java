@@ -3,11 +3,11 @@ package org.example;
 import java.util.Objects;
 
 public class Ingredients {
-    private final int id;
-    private final String name;
-    private final Double price;
-    private final CategoryEnum category;
-    private final Dish dish;
+    private int id;
+    private String name;
+    private Double price;
+    private CategoryEnum category;
+    private Dish dish;
 
     public Ingredients(int id, String name, Double price, CategoryEnum category, Dish dish) {
         this.id = id;
@@ -30,6 +30,27 @@ public class Ingredients {
     }
     public Dish getDish() {
         return dish;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    public void setPrice(Double price) {
+        this.price = price;
+    }
+    public void setCategory(CategoryEnum category) {
+        this.category = category;
+    }
+    public void setDish(Dish dish) {
+        this.dish = dish;
+    }
+
+    public String getDishName() {
+        return this.dish.getName();
     }
 
     @Override

@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.Objects;
 
 public class Dish {
-    private final int id;
-    private final String name;
-    private final DishTypeEnum dishType;
-    private final List<Ingredients> ingredients;
+    private int id;
+    private String name;
+    private DishTypeEnum dishType;
+    private List<Ingredients> ingredients;
 
     public Dish(int id, String name, DishTypeEnum dishType, List<Ingredients> ingredients) {
         this.id = id;
@@ -26,6 +26,26 @@ public class Dish {
     }
     public List<Ingredients> getIngredients() {
         return ingredients;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+    public void setDishType(DishTypeEnum dishType) {
+        this.dishType = dishType;
+    }
+    public void setIngredients(List<Ingredients> ingredients) {
+        this.ingredients = ingredients;
+    }
+
+    public Double getDishPrice() {
+        Double output = 0.0;
+        for (Ingredients ingredient : this.ingredients)
+            output += ingredient.getPrice();
+        return output;
     }
 
     @Override
