@@ -1,5 +1,6 @@
 package org.example;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -7,7 +8,8 @@ public class Dish {
     private int id;
     private String name;
     private DishTypeEnum dishType;
-    private List<Ingredients> ingredients;
+    private List<Ingredients> ingredients = new ArrayList<>();
+
 
     public Dish(int id, String name, DishTypeEnum dishType, List<Ingredients> ingredients) {
         this.id = id;
@@ -15,6 +17,7 @@ public class Dish {
         this.dishType = dishType;
         this.ingredients = ingredients;
     }
+
     public int getId() {
         return id;
     }
@@ -37,13 +40,14 @@ public class Dish {
     public void setDishType(DishTypeEnum dishType) {
         this.dishType = dishType;
     }
+
     public void setIngredients(List<Ingredients> ingredients) {
-        this.ingredients = ingredients;
+        this.ingredients = new ArrayList<>(ingredients);
     }
 
     public Double getDishPrice() {
         Double output = 0.0;
-        for (Ingredients ingredient : this.ingredients)
+        for (Ingredients ingredient : getIngredients())
             output += ingredient.getPrice();
         return output;
     }
@@ -63,10 +67,10 @@ public class Dish {
     @Override
     public String toString() {
         return "Dish{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", dishType=" + dishType +
-                ", ingredients=" + ingredients +
+                "id=" + getId() +
+                ", name='" + getName() + '\'' +
+                ", dishType=" + getDishType() +
+                ", ingredients=" + getIngredients() +
                 ", dishPrice=" + getDishPrice() +
                 '}';
     }

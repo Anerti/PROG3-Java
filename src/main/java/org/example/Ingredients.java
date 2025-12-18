@@ -9,12 +9,11 @@ public class Ingredients {
     private CategoryEnum category;
     private Dish dish;
 
-    public Ingredients(int id, String name, Double price, CategoryEnum category, Dish dish) {
+    public Ingredients(int id, String name, Double price, CategoryEnum category) {
         this.id = id;
         this.name = name;
         this.price = price;
         this.category = category;
-        this.dish = dish;
     }
     public int getId() {
         return id;
@@ -50,7 +49,11 @@ public class Ingredients {
     }
 
     public String getDishName() {
-        return this.dish.getName();
+        if (dish == null)
+            return "";
+
+        String name = dish.getName();
+        return name != null ? name : "";
     }
 
     @Override

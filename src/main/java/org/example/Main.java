@@ -4,7 +4,7 @@ import java.sql.SQLException;
 
 public class Main {
     public static void main(String[] args) throws SQLException {
-        DBConnection db = new DBConnection();
-        System.out.println(db.getConnection());
+        DataRetriever dr = new DataRetriever();
+        System.out.println(dr.findDishById(4));
     }
 }
