@@ -72,7 +72,7 @@ public class Ingredients {
                 ", name='" + name + '\'' +
                 ", price=" + price +
                 ", category=" + category +
-                ", dish=" + dish +
+                ", dish=" + getDishName() +
                 '}';
     }
 }

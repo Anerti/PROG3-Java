@@ -67,6 +67,7 @@ public class Dish {
                 ", name='" + name + '\'' +
                 ", dishType=" + dishType +
                 ", ingredients=" + ingredients +
+                ", dishPrice=" + getDishPrice() +
                 '}';
     }
 }
