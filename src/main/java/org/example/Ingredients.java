@@ -50,12 +50,12 @@ public class Ingredients {
         if (this == o) return true;
         if (!(o instanceof Ingredients)) return false;
         Ingredients that = (Ingredients) o;
-        return id == that.id;
+        return id == that.id && Objects.equals(name, that.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(id, name);
     }
 
     @Override

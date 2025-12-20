@@ -62,18 +62,18 @@ public class DataRetriever {
     public List<Ingredients> findIngredients(int page, int size) throws SQLException {
         final String query =
                 """
-                SELECT
-                Ingredient.id AS ingredient_id,
-                Ingredient.name AS ingredient_name,
-                Ingredient.price AS ingredient_price,
-                Ingredient.category AS ingredient_category,
-                Ingredient.id_dish,
-                Dish.name AS dish_name,
-                Dish.dish_type
-                FROM mini_dish_management_app.Ingredient
-                INNER JOIN  mini_dish_management_app.Dish
-                ON Ingredient.id_dish = Dish.id
-                OFFSET ? LIMIT ?;
+                    SELECT
+                    Ingredient.id AS ingredient_id,
+                    Ingredient.name AS ingredient_name,
+                    Ingredient.price AS ingredient_price,
+                    Ingredient.category AS ingredient_category,
+                    Ingredient.id_dish,
+                    Dish.name AS dish_name,
+                    Dish.dish_type
+                    FROM mini_dish_management_app.Ingredient
+                    INNER JOIN  mini_dish_management_app.Dish
+                    ON Ingredient.id_dish = Dish.id
+                    OFFSET ? LIMIT ?;
                 """;
         List<Ingredients> results = new ArrayList<>();
 
@@ -111,8 +111,60 @@ public class DataRetriever {
         }
     }
 
-    public List<Ingredients> createIngredients(List<Ingredients> newIngredients){
-        throw  new UnsupportedOperationException("Not supported yet.");
+    public List<Ingredients> createIngredients(List<Ingredients> newIngredients) throws SQLException {
+        if (newIngredients == null || newIngredients.isEmpty())
+            throw new IllegalArgumentException("New ingredients must not be empty");
+
+        final String queryCheck =
+                """
+                    SELECT
+                    Ingredient.name AS ingredient_name
+                    FROM mini_dish_management_app.Ingredient;
+                """;
+
+        try (Connection c = dbConn.getConnection()){
+            PreparedStatement ps = c.prepareStatement(queryCheck);
+            ResultSet rs = ps.executeQuery();
+            List<String> savedIngredients = new ArrayList<>();
+
+            while (rs.next()) {
+                String ingredientName = rs.getString("ingredient_name");
+                savedIngredients.add(ingredientName);
+            }
+            ps.close();
+            rs.close();
+
+            for (Ingredients ingredient : newIngredients) {
+                if (savedIngredients.contains(ingredient.getName()))
+                    throw new IllegalArgumentException(String.format("ingredient %s already exist", ingredient.getName()));
+
+                final String insertQuery =
+                        """
+                            INSERT INTO
+                            mini_dish_management_app.Ingredient(id, name, price, category)
+                            VALUES (?, ?, ?, ?::mini_dish_management_app.ingredient_category);
+                        """;
+
+                try{
+                    PreparedStatement insertPs = c.prepareStatement(insertQuery);
+                    insertPs.setInt(1, ingredient.getId());
+                    insertPs.setString(2, ingredient.getName());
+                    insertPs.setDouble(3, ingredient.getPrice());
+                    insertPs.setString(4, ingredient.getCategory().toString());
+                    insertPs.executeUpdate();
+                    insertPs.close();
+                }
+                catch(SQLException e){
+                    throw new SQLException(e);
+                }
+            }
+            rs.close();
+            c.close();
+            return newIngredients;
+        }
+        catch(SQLException e){
+            throw new SQLException(e);
+        }
     }
 
     public Dish saveDish(Dish dishToSave){
