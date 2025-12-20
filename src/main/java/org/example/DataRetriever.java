@@ -11,37 +11,42 @@ public class DataRetriever {
     private final DBConnection dbConn =  new DBConnection();
 
     public Dish findDishById(Integer id) throws SQLException {
-        final String query = """
-                SELECT\s
-                Dish.id, Dish.name, Dish.dish_type, Ingredient.id AS ingredient_id, Ingredient.name AS ingredient_name, Ingredient.price, Ingredient.category\s
-                FROM mini_dish_management_app.Dish\s
+        final String query =
+                """
+                SELECT
+                Dish.id,
+                Dish.name,
+                Dish.dish_type,
+                Ingredient.id AS ingredient_id,
+                Ingredient.name AS ingredient_name,
+                Ingredient.price AS ingredient_price,
+                Ingredient.category AS ingredient_category
+                FROM mini_dish_management_app.Dish
                 LEFT JOIN mini_dish_management_app.Ingredient ON Dish.id = Ingredient.id_Dish WHERE Dish.id = ?
-               \s
-               """;
+                """;
         try(Connection c = dbConn.getConnection()){
             PreparedStatement ps = c.prepareStatement(query);
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
             Dish dish = null;
-            List<Ingredients> ingredients = new ArrayList<>();
 
             while (rs.next()) {
-                if (dish == null) dish = new Dish(
+                if (dish == null)
+                    dish = new Dish(
                         rs.getInt("id"),
                         rs.getString("name"),
-                        DishTypeEnum.valueOf(rs.getString("dish_type")),
-                        ingredients
-                );
-
-                int ingId = rs.getInt("ingredient_id");
-                if (!rs.wasNull()) {
-                    Ingredients ing = new Ingredients(
-                            ingId,
-                            rs.getString("ingredient_name"),
-                            rs.getDouble("price"),
-                            CategoryEnum.valueOf(rs.getString("category"))
+                        DishTypeEnum.valueOf(rs.getString("dish_type"))
                     );
-                    ingredients.add(ing);
+
+                int ingredientId = rs.getInt("ingredient_id");
+                if (!rs.wasNull()) {
+                    Ingredients ingredient = new Ingredients(
+                            ingredientId,
+                            rs.getString("ingredient_name"),
+                            rs.getDouble("ingredient_price"),
+                            CategoryEnum.valueOf(rs.getString("ingredient_category"))
+                    );
+                    dish.addIngredient(ingredient);
                 }
             }
             rs.close();
@@ -54,8 +59,56 @@ public class DataRetriever {
         }
     }
 
-    public List<Ingredients> findIngredients(int page, int size){
-        throw  new UnsupportedOperationException("Not supported yet.");
+    public List<Ingredients> findIngredients(int page, int size) throws SQLException {
+        final String query =
+                """
+                SELECT
+                Ingredient.id AS ingredient_id,
+                Ingredient.name AS ingredient_name,
+                Ingredient.price AS ingredient_price,
+                Ingredient.category AS ingredient_category,
+                Ingredient.id_dish,
+                Dish.name AS dish_name,
+                Dish.dish_type
+                FROM mini_dish_management_app.Ingredient
+                INNER JOIN  mini_dish_management_app.Dish
+                ON Ingredient.id_dish = Dish.id
+                OFFSET ? LIMIT ?;
+                """;
+        List<Ingredients> results = new ArrayList<>();
+
+        try (Connection c = dbConn.getConnection()) {
+            PreparedStatement ps = c.prepareStatement(query);
+            ps.setInt(1, page);
+            ps.setInt(2, size);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Ingredients ingredient = new Ingredients(
+                        rs.getInt("ingredient_id"),
+                        rs.getString("ingredient_name"),
+                        rs.getDouble("ingredient_price"),
+                        CategoryEnum.valueOf(rs.getString("ingredient_category"))
+                );
+                String dishName = rs.getString("dish_name");
+                if (!rs.wasNull()) {
+                    Dish dish = new Dish(
+                            rs.getInt("id_dish"),
+                            dishName,
+                            DishTypeEnum.valueOf(rs.getString("dish_type"))
+                    );
+                    ingredient.setDish(dish);
+                }
+                results.add(ingredient);
+            }
+            rs.close();
+            ps.close();
+            c.close();
+            return results;
+        }
+        catch(SQLException e){
+            throw new SQLException(e);
+        }
     }
 
     public List<Ingredients> createIngredients(List<Ingredients> newIngredients){

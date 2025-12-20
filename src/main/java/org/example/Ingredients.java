@@ -3,7 +3,8 @@ package org.example;
 import java.util.Objects;
 
 public class Ingredients {
-    private int id;
+
+    private final int id;
     private String name;
     private Double price;
     private CategoryEnum category;
@@ -12,70 +13,59 @@ public class Ingredients {
     public Ingredients(int id, String name, Double price, CategoryEnum category) {
         this.id = id;
         this.name = name;
-        this.price = price;
+        this.price = price != null ? price : 0.0;
         this.category = category;
     }
+
     public int getId() {
         return id;
     }
+
     public String getName() {
         return name;
     }
+
     public Double getPrice() {
         return price;
     }
+
     public CategoryEnum getCategory() {
         return category;
     }
+
     public Dish getDish() {
         return dish;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-    public void setPrice(Double price) {
-        this.price = price;
-    }
-    public void setCategory(CategoryEnum category) {
-        this.category = category;
-    }
-    public void setDish(Dish dish) {
+    void setDish(Dish dish) {
         this.dish = dish;
     }
 
     public String getDishName() {
-        if (dish == null)
-            return "";
-
-        String name = dish.getName();
-        return name != null ? name : "";
+        return dish != null && dish.getName() != null ? dish.getName() : "";
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) return true;
+        if (!(o instanceof Ingredients)) return false;
         Ingredients that = (Ingredients) o;
-        return id == that.id && Objects.equals(name, that.name) && Objects.equals(price, that.price) && category == that.category && Objects.equals(dish, that.dish);
+        return id == that.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, price, category, dish);
+        return Objects.hash(id);
     }
 
     @Override
     public String toString() {
-        return "Ingredients{" +
+        return "Ingredient{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", price=" + price +
                 ", category=" + category +
-                ", dish=" + getDishName() +
+                ", dishName='" + getDishName() + '\'' +
                 '}';
     }
 }
