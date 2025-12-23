@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DataRetriever {
     private final DBConnection dbConn =  new DBConnection();
@@ -111,60 +113,65 @@ public class DataRetriever {
         }
     }
 
-    public List<Ingredients> createIngredients(List<Ingredients> newIngredients) throws SQLException {
-        if (newIngredients == null || newIngredients.isEmpty())
-            throw new IllegalArgumentException("New ingredients must not be empty");
-
-        final String queryCheck =
+    private List<String> getAllIngredientsName() throws SQLException {
+        final String query =
                 """
                     SELECT
                     Ingredient.name AS ingredient_name
                     FROM mini_dish_management_app.Ingredient;
                 """;
 
+        List<String> output = new ArrayList<>();
         try (Connection c = dbConn.getConnection()){
-            PreparedStatement ps = c.prepareStatement(queryCheck);
+            PreparedStatement ps = c.prepareStatement(query);
             ResultSet rs = ps.executeQuery();
-            List<String> savedIngredients = new ArrayList<>();
 
-            while (rs.next()) {
+            while (rs.next()){
                 String ingredientName = rs.getString("ingredient_name");
-                savedIngredients.add(ingredientName);
+                output.add(ingredientName.toLowerCase());
             }
             ps.close();
             rs.close();
-
-            for (Ingredients ingredient : newIngredients) {
-                if (savedIngredients.contains(ingredient.getName()))
-                    throw new IllegalArgumentException(String.format("ingredient %s already exist", ingredient.getName()));
-
-                final String insertQuery =
-                        """
-                            INSERT INTO
-                            mini_dish_management_app.Ingredient(id, name, price, category)
-                            VALUES (?, ?, ?, ?::mini_dish_management_app.ingredient_category);
-                        """;
-
-                try{
-                    PreparedStatement insertPs = c.prepareStatement(insertQuery);
-                    insertPs.setInt(1, ingredient.getId());
-                    insertPs.setString(2, ingredient.getName());
-                    insertPs.setDouble(3, ingredient.getPrice());
-                    insertPs.setString(4, ingredient.getCategory().toString());
-                    insertPs.executeUpdate();
-                    insertPs.close();
-                }
-                catch(SQLException e){
-                    throw new SQLException(e);
-                }
-            }
-            rs.close();
             c.close();
-            return newIngredients;
+            return output;
         }
         catch(SQLException e){
             throw new SQLException(e);
         }
+
+    }
+    public List<Ingredients> createIngredients(List<Ingredients> newIngredients) throws SQLException {
+        if (newIngredients == null || newIngredients.isEmpty())
+            throw new IllegalArgumentException("New ingredients must not be empty");
+
+
+        Set<String> savedIngredients = new HashSet<>(getAllIngredientsName());
+        for (Ingredients ingredient : newIngredients) {
+            if (savedIngredients.contains(ingredient.getName().toLowerCase()))
+                throw new IllegalArgumentException(String.format("ingredient %s already exist", ingredient.getName()));
+        }
+
+        for (Ingredients ingredient : newIngredients) {
+            final String insertQuery =
+                    """
+                        INSERT INTO
+                        mini_dish_management_app.Ingredient(id, name, price, category)
+                        VALUES (?, ?, ?, ?::mini_dish_management_app.ingredient_category);
+                    """;
+
+            try (Connection c = dbConn.getConnection()) {
+                PreparedStatement insertPs = c.prepareStatement(insertQuery);
+                insertPs.setInt(1, ingredient.getId());
+                insertPs.setString(2, ingredient.getName());
+                insertPs.setDouble(3, ingredient.getPrice());
+                insertPs.setString(4, ingredient.getCategory().toString());
+                insertPs.executeUpdate();
+                insertPs.close();
+            } catch (SQLException e) {
+                throw new SQLException(e);
+            }
+        }
+        return newIngredients;
     }
 
     public Dish saveDish(Dish dishToSave){
