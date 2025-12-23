@@ -113,21 +113,14 @@ public class DataRetriever {
         }
     }
 
-    private List<String> getAllIngredientsName() throws SQLException {
-        final String query =
-                """
-                    SELECT
-                    Ingredient.name AS ingredient_name
-                    FROM mini_dish_management_app.Ingredient;
-                """;
-
+    private List<String> getAllElementName(String query) throws SQLException {
         List<String> output = new ArrayList<>();
         try (Connection c = dbConn.getConnection()){
             PreparedStatement ps = c.prepareStatement(query);
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()){
-                String ingredientName = rs.getString("ingredient_name");
+                String ingredientName = rs.getString("name");
                 output.add(ingredientName.toLowerCase());
             }
             ps.close();
@@ -140,6 +133,18 @@ public class DataRetriever {
         }
 
     }
+
+    private List<String> getAllIngredientsName() throws SQLException {
+        final String query =
+                """
+                    SELECT
+                    Ingredient.name AS name
+                    FROM mini_dish_management_app.Ingredient;
+                """;
+
+        return getAllElementName(query);
+    }
+
     public List<Ingredients> createIngredients(List<Ingredients> newIngredients) throws SQLException {
         if (newIngredients == null || newIngredients.isEmpty())
             throw new IllegalArgumentException("New ingredients must not be empty");
@@ -174,8 +179,17 @@ public class DataRetriever {
         return newIngredients;
     }
 
+    private List<String> getAllDishNames() throws SQLException {
+        final String query =
+                """
+                    SELECT
+                    Dish.name AS name
+                    FROM mini_dish_management_app.Dish;
+                """;
+        return getAllElementName(query);
+    }
     public Dish saveDish(Dish dishToSave){
-        throw  new UnsupportedOperationException("Not supported yet.");
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public List<Dish> findDishsByIngredientName(String IngredientName){
