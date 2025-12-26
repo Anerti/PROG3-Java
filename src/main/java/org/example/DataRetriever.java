@@ -12,6 +12,7 @@ import java.util.Set;
 public class DataRetriever {
     private final DBConnection dbConn =  new DBConnection();
 
+
     public Dish findDishById(Integer id) throws SQLException {
         final String query =
                 """
@@ -24,7 +25,7 @@ public class DataRetriever {
                 Ingredient.price AS ingredient_price,
                 Ingredient.category AS ingredient_category
                 FROM mini_dish_management_app.Dish
-                LEFT JOIN mini_dish_management_app.Ingredient ON Dish.id = Ingredient.id_Dish WHERE Dish.id = ?
+                LEFT JOIN mini_dish_management_app.Ingredient ON Dish.id = Ingredient.id_dish WHERE Dish.id = ?
                 """;
         try(Connection c = dbConn.getConnection()){
             PreparedStatement ps = c.prepareStatement(query);
@@ -232,8 +233,62 @@ public class DataRetriever {
         return dishToSave;
     }
 
-    public List<Dish> findDishsByIngredientName(String IngredientName){
-        throw  new UnsupportedOperationException("Not supported yet.");
+    public List<Dish> findDishsByIngredientName(String IngredientName) throws SQLException {
+        final String query =
+                """
+                    SELECT
+                    Dish.id,
+                    Dish.name,
+                    Dish.dish_type,
+                    Ingredient.id AS Ingredient_id,
+                    Ingredient.name AS ingredient_name,
+                    Ingredient.price AS ingredient_price,
+                    Ingredient.category AS ingredient_category
+                    FROM mini_dish_management_app.Dish
+                    INNER JOIN mini_dish_management_app.Ingredient
+                    ON Dish.id = Ingredient.id_dish
+                    WHERE id_dish IN(
+                        SELECT id_dish
+                        FROM mini_dish_management_app.Ingredient
+                        WHERE Ingredient.name = ?
+                    );
+                """;
+
+        try(Connection c = dbConn.getConnection()){
+            PreparedStatement ps = c.prepareStatement(query);
+            ps.setString(1, IngredientName);
+            ResultSet rs = ps.executeQuery();
+            List<Dish> dishesToReturn = new ArrayList<>();
+            Dish dish = null;
+
+            while (rs.next()) {
+                if (dish == null)
+                    dish = new Dish(
+                            rs.getInt("id"),
+                            rs.getString("name"),
+                            DishTypeEnum.valueOf(rs.getString("dish_type"))
+                    );
+
+                int ingredientId = rs.getInt("ingredient_id");
+                if (!rs.wasNull()) {
+                    Ingredients ingredient = new Ingredients(
+                            ingredientId,
+                            rs.getString("ingredient_name"),
+                            rs.getDouble("ingredient_price"),
+                            CategoryEnum.valueOf(rs.getString("ingredient_category"))
+                    );
+                    dish.addIngredient(ingredient);
+                }
+            }
+            dishesToReturn.add(dish);
+            rs.close();
+            ps.close();
+            c.close();
+            return dishesToReturn;
+        }
+        catch(SQLException e){
+            throw new SQLException(e);
+        }
     }
 
     public List<Ingredients> findIngredientsByCriteria(String ingredientName, CategoryEnum category, String dishName, int page, int size){
