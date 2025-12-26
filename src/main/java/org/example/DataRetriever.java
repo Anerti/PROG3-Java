@@ -188,42 +188,47 @@ public class DataRetriever {
                 """;
         return getAllElementName(query);
     }
-    public Dish saveDish(Dish dishToSave) throws SQLException {
-        Set<String> savedDish = new HashSet<String>(getAllDishNames());
 
-        if (savedDish.stream().anyMatch(dish -> dish.equals(dishToSave.getName().toLowerCase()))){
-            try (Connection c = dbConn.getConnection()) {
-                final String query =
-                        """
-                                UPDATE mini_dish_management_app.Dish SET dish_type = ?::mini_dish_management_app.dish_type, id = ? WHERE name = ?;
-                        """;
-                PreparedStatement updatePs = c.prepareStatement(query);
-                updatePs.setString(1, dishToSave.getDishType().toString());
-                updatePs.setInt(2, dishToSave.getId());
-                updatePs.setString(3, dishToSave.getName());
-                updatePs.executeUpdate();
-                updatePs.close();
-            }
-            catch (SQLException e){
-                throw new SQLException(e);
-            }
-        }
+    private void UpdateAndInsertQueryHandlerOnSaveDishMethod(String query, int  id, DishTypeEnum dishType, String dishName) throws SQLException {
         try (Connection c = dbConn.getConnection()) {
-            final String query =
-                    """
-                        INSERT INTO mini_dish_management_app.Dish(id, name, dish_type)
-                        VALUES  (?, ?, ?::mini_dish_management_app.dish_type);
-                    """;
-            PreparedStatement insertPs = c.prepareStatement(query);
-            insertPs.setInt(1, dishToSave.getId());
-            insertPs.setString(2, dishToSave.getName());
-            insertPs.setString(3, dishToSave.getDishType().toString());
-            insertPs.executeUpdate();
-            insertPs.close();
+            PreparedStatement ps = c.prepareStatement(query);
+            ps.setInt(1, id);
+            ps.setString(2, String.valueOf(dishType));
+            ps.setString(3, dishName);
+            ps.executeUpdate();
+            ps.close();
         }
         catch(SQLException e){
             throw new SQLException(e);
         }
+    }
+    public Dish saveDish(Dish dishToSave) throws SQLException {
+        Set<String> savedDish = new HashSet<String>(getAllDishNames());
+
+        if (savedDish.stream().anyMatch(dish -> dish.equals(dishToSave.getName().toLowerCase()))){
+            UpdateAndInsertQueryHandlerOnSaveDishMethod(
+                    """
+                                UPDATE mini_dish_management_app.Dish
+                                SET id = ?,
+                                dish_type = ?::mini_dish_management_app.dish_type
+                                WHERE name = ?;
+                        """,
+                    dishToSave.getId(),
+                    dishToSave.getDishType(),
+                    dishToSave.getName()
+            );
+            return dishToSave;
+        }
+
+        UpdateAndInsertQueryHandlerOnSaveDishMethod(
+                """
+                        INSERT INTO mini_dish_management_app.Dish(id, dish_type, name)
+                        VALUES  (?, ?::mini_dish_management_app.dish_type, ?);
+                    """,
+                dishToSave.getId(),
+                dishToSave.getDishType(),
+                dishToSave.getName()
+        );
         return dishToSave;
     }
 
