@@ -291,7 +291,81 @@ public class DataRetriever {
         }
     }
 
-    public List<Ingredients> findIngredientsByCriteria(String ingredientName, CategoryEnum category, String dishName, int page, int size){
-        throw  new UnsupportedOperationException("Not supported yet.");
+    public List<Ingredients> findIngredientsByCriteria(String ingredientName, CategoryEnum category, String dishName, int page, int size) throws SQLException {
+        StringBuilder query = new StringBuilder(
+    """
+        SELECT
+            Ingredient.id AS ingredient_id,
+            Ingredient.name AS ingredient_name,
+            Ingredient.price AS ingredient_price,
+            Ingredient.category AS ingredient_category,
+            Dish.id AS id_dish,
+            Dish.name AS dish_name,
+            Dish.dish_type AS dish_type
+        FROM mini_dish_management_app.Ingredient
+        INNER JOIN mini_dish_management_app.Dish
+            ON Dish.id = Ingredient.id_dish
+        WHERE 1=1
+    """);
+
+        if (ingredientName != null && !ingredientName.isBlank())
+            query.append(" AND Ingredient.name ILIKE ?");
+
+        if (dishName != null && !dishName.isBlank())
+            query.append(" AND Dish.name ILIKE ?");
+
+        if (category != null)
+            query.append(" AND Ingredient.category = ?");
+
+        query.append(" LIMIT ? OFFSET ?");
+
+        try (Connection c = dbConn.getConnection()) {
+            PreparedStatement ps = c.prepareStatement(String.valueOf(query));
+            int parameterCount = 1;
+
+            if (ingredientName != null &&  !ingredientName.isBlank()) {
+                ps.setString(parameterCount++, String.format("%%%s%%", ingredientName));
+            }
+            if (category != null) {
+                ps.setString(parameterCount++, String.format("%%%s%%", category));
+            }
+            if (dishName != null && !dishName.isBlank()) {
+                ps.setString(parameterCount++, String.format("%%%s%%", dishName));
+            }
+            if (size < 1) size = 10;
+            ps.setInt(parameterCount++, size);
+
+            if (page < 1) page = 1;
+            ps.setInt(parameterCount,(page - 1) * size);
+
+            ResultSet rs = ps.executeQuery();
+
+            List<Ingredients> ingredients = new ArrayList<>();
+            while (rs.next()) {
+                Ingredients ingredient = new Ingredients(
+                        rs.getInt("ingredient_id"),
+                        rs.getString("ingredient_name"),
+                        rs.getDouble("ingredient_price"),
+                        CategoryEnum.valueOf(rs.getString("ingredient_category"))
+                );
+                String dishNameResult = rs.getString("dish_name");
+                if (!rs.wasNull()) {
+                    Dish dish = new Dish(
+                            rs.getInt("id_dish"),
+                            dishNameResult,
+                            DishTypeEnum.valueOf(rs.getString("dish_type"))
+                    );
+                    ingredient.setDish(dish);
+                }
+                ingredients.add(ingredient);
+            }
+            rs.close();
+            ps.close();
+            c.close();
+            return ingredients;
+        }
+        catch (SQLException e){
+            throw new SQLException(e);
+        }
     }
 }
