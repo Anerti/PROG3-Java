@@ -7,8 +7,8 @@ import java.util.Objects;
 public class Dish {
 
     private final int id;
-    private String name;
-    private DishTypeEnum dishType;
+    private final String name;
+    private final DishTypeEnum dishType;
     private final List<Ingredients> ingredients = new ArrayList<>();
 
     public Dish(int id, String name, DishTypeEnum dishType) {
@@ -36,6 +36,9 @@ public class Dish {
     public void addIngredient(Ingredients ingredient) {
         if (ingredient == null) throw new NullPointerException("ingredient is null");
 
+        if (ingredient.getDish() != null && ingredient.getDish() != this)
+            ingredient.getDish().removeIngredient(ingredient);
+
         if (!ingredients.contains(ingredient)) {
             ingredients.add(ingredient);
             ingredient.setDish(this);
@@ -48,16 +51,14 @@ public class Dish {
 
     public Double getDishPrice() {
         return ingredients.stream()
-                .map(Ingredients::getPrice)
-                .filter(Objects::nonNull)
-                .reduce(0.0, Double::sum);
+                .mapToDouble(Ingredients::getPrice)
+                .sum();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Dish)) return false;
-        Dish dish = (Dish) o;
+        if (!(o instanceof Dish dish)) return false;
         return id == dish.id;
     }
 

@@ -5,9 +5,9 @@ import java.util.Objects;
 public class Ingredients {
 
     private final int id;
-    private String name;
-    private Double price;
-    private CategoryEnum category;
+    private final String name;
+    private final Double price;
+    private final CategoryEnum category;
     private Dish dish;
 
     public Ingredients(int id, String name, Double price, CategoryEnum category) {
@@ -38,8 +38,20 @@ public class Ingredients {
     }
 
     public void setDish(Dish dish) {
+        if (this.dish == dish) return;
+
+        Dish oldDish = this.dish;
         this.dish = dish;
+
+        if (oldDish != null) {
+            oldDish.getIngredients().remove(this);
+        }
+
+        if (dish != null && !dish.getIngredients().contains(this)) {
+            dish.getIngredients().add(this);
+        }
     }
+
 
     public String getDishName() {
         return dish != null && dish.getName() != null ? dish.getName() : "";
@@ -48,14 +60,13 @@ public class Ingredients {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Ingredients)) return false;
-        Ingredients that = (Ingredients) o;
-        return id == that.id && Objects.equals(name, that.name);
+        if (!(o instanceof Ingredients that)) return false;
+        return id == that.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name);
+        return Objects.hash(id);
     }
 
     @Override
