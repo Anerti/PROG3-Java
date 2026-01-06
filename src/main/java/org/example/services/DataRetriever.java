@@ -157,13 +157,13 @@ public class DataRetriever {
 
     public List<Ingredients> createIngredients(List<Ingredients> newIngredients) throws SQLException {
         if (newIngredients == null || newIngredients.isEmpty())
-            throw new IllegalArgumentException("New ingredients must not be empty");
+            throw new IllegalArgumentException("newIngredients must not be empty");
 
 
         Set<String> savedIngredients = new HashSet<>(getAllIngredientsName());
         for (Ingredients ingredient : newIngredients) {
             if (savedIngredients.contains(ingredient.getName().toLowerCase()))
-                throw new IllegalArgumentException(String.format("ingredient %s already exist", ingredient.getName()));
+                throw new IllegalArgumentException(String.format("Ingredient %s already exist", ingredient.getName()));
         }
 
         for (Ingredients ingredient : newIngredients) {
@@ -174,14 +174,15 @@ public class DataRetriever {
                         VALUES (?, ?, ?, ?::mini_dish_management_app.ingredient_category);
                     """;
 
-            try (Connection c = dbConn.getConnection()) {
-                PreparedStatement insertPs = c.prepareStatement(insertQuery);
+            try (
+                    Connection c = dbConn.getConnection();
+                    PreparedStatement insertPs = c.prepareStatement(insertQuery)
+            ) {
                 insertPs.setInt(1, ingredient.getId());
                 insertPs.setString(2, ingredient.getName());
                 insertPs.setDouble(3, ingredient.getPrice());
                 insertPs.setString(4, ingredient.getCategory().toString());
                 insertPs.executeUpdate();
-                insertPs.close();
             } catch (SQLException e) {
                 throw new SQLException(e);
             }
