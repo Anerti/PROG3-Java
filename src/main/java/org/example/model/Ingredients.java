@@ -1,4 +1,4 @@
-package org.example;
+package org.example.model;
 
 import java.util.Objects;
 
@@ -37,7 +37,7 @@ public class Ingredients {
         return dish;
     }
 
-    void setDish(Dish dish) {
+    public void setDish(Dish dish) {
         this.dish = dish;
     }
 

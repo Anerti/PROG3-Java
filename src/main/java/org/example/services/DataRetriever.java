@@ -1,4 +1,10 @@
-package org.example;
+package org.example.services;
+
+import org.example.db.DBConnection;
+import org.example.model.CategoryEnum;
+import org.example.model.Dish;
+import org.example.model.DishTypeEnum;
+import org.example.model.Ingredients;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

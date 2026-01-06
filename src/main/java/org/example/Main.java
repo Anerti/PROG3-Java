@@ -1,5 +1,7 @@
 package org.example;
 
+import org.example.services.DataRetriever;
+
 import java.sql.SQLException;
 
 public class Main {
