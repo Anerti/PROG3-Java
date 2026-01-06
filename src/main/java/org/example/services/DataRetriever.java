@@ -126,23 +126,22 @@ public class DataRetriever {
 
     private List<String> getAllElementName(String query) throws SQLException {
         List<String> output = new ArrayList<>();
-        try (Connection c = dbConn.getConnection()){
-            PreparedStatement ps = c.prepareStatement(query);
-            ResultSet rs = ps.executeQuery();
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(query)
+        ){
+            try(ResultSet rs = ps.executeQuery()) {
 
-            while (rs.next()){
-                String ingredientName = rs.getString("name");
-                output.add(ingredientName.toLowerCase());
+                while (rs.next()) {
+                    String ingredientName = rs.getString("name");
+                    output.add(ingredientName.toLowerCase());
+                }
             }
-            ps.close();
-            rs.close();
-            c.close();
             return output;
         }
         catch(SQLException e){
             throw new SQLException(e);
         }
-
     }
 
     private List<String> getAllIngredientsName() throws SQLException {
