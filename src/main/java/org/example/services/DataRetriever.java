@@ -76,6 +76,29 @@ public class DataRetriever {
         }
     }
 
+    private List<Ingredients> ingredientRetriever(ResultSet rs) throws SQLException {
+        List<Ingredients> results = new ArrayList<>();
+        while (rs.next()) {
+            Ingredients ingredient = new Ingredients(
+                    rs.getInt("ingredient_id"),
+                    rs.getString("ingredient_name"),
+                    rs.getDouble("ingredient_price"),
+                    CategoryEnum.valueOf(rs.getString("ingredient_category"))
+            );
+            String dishName = rs.getString("dish_name");
+            if (!rs.wasNull()) {
+                Dish dish = new Dish(
+                        rs.getInt("id_dish"),
+                        dishName,
+                        DishTypeEnum.valueOf(rs.getString("dish_type"))
+                );
+                ingredient.setDish(dish);
+            }
+            results.add(ingredient);
+        }
+        return results;
+    }
+
     public List<Ingredients> findIngredients(int page, int size) throws SQLException {
         final String query =
                 """
@@ -92,7 +115,6 @@ public class DataRetriever {
                     ON Ingredient.id_dish = Dish.id
                     LIMIT ? OFFSET ?;
                 """;
-        List<Ingredients> results = new ArrayList<>();
 
         try (
                 Connection c = dbConn.getConnection();
@@ -102,25 +124,7 @@ public class DataRetriever {
             ps.setInt(2, (page - 1) * size);
 
             try(ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Ingredients ingredient = new Ingredients(
-                            rs.getInt("ingredient_id"),
-                            rs.getString("ingredient_name"),
-                            rs.getDouble("ingredient_price"),
-                            CategoryEnum.valueOf(rs.getString("ingredient_category"))
-                    );
-                    String dishName = rs.getString("dish_name");
-                    if (!rs.wasNull()) {
-                        Dish dish = new Dish(
-                                rs.getInt("id_dish"),
-                                dishName,
-                                DishTypeEnum.valueOf(rs.getString("dish_type"))
-                        );
-                        ingredient.setDish(dish);
-                    }
-                    results.add(ingredient);
-                }
-                return results;
+                return ingredientRetriever(rs);
             }
         }
         catch(SQLException e){
@@ -337,27 +341,7 @@ public class DataRetriever {
             ps.setInt(parameterCount,(page - 1) * size);
 
             try(ResultSet rs = ps.executeQuery()) {
-
-                List<Ingredients> ingredients = new ArrayList<>();
-                while (rs.next()) {
-                    Ingredients ingredient = new Ingredients(
-                            rs.getInt("ingredient_id"),
-                            rs.getString("ingredient_name"),
-                            rs.getDouble("ingredient_price"),
-                            CategoryEnum.valueOf(rs.getString("ingredient_category"))
-                    );
-                    String dishNameResult = rs.getString("dish_name");
-                    if (!rs.wasNull()) {
-                        Dish dish = new Dish(
-                                rs.getInt("id_dish"),
-                                dishNameResult,
-                                DishTypeEnum.valueOf(rs.getString("dish_type"))
-                        );
-                        ingredient.setDish(dish);
-                    }
-                    ingredients.add(ingredient);
-                }
-                return ingredients;
+                return ingredientRetriever(rs);
             }
         }
         catch (SQLException e){
