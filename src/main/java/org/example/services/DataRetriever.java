@@ -333,8 +333,10 @@ public class DataRetriever {
 
         query.append(" LIMIT ? OFFSET ?");
 
-        try (Connection c = dbConn.getConnection()) {
-            PreparedStatement ps = c.prepareStatement(String.valueOf(query));
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(String.valueOf(query))
+        ) {
             int parameterCount = 1;
 
             if (ingredientName != null &&  !ingredientName.isBlank()) {
@@ -352,31 +354,29 @@ public class DataRetriever {
             if (page < 1) page = 1;
             ps.setInt(parameterCount,(page - 1) * size);
 
-            ResultSet rs = ps.executeQuery();
+            try(ResultSet rs = ps.executeQuery()) {
 
-            List<Ingredients> ingredients = new ArrayList<>();
-            while (rs.next()) {
-                Ingredients ingredient = new Ingredients(
-                        rs.getInt("ingredient_id"),
-                        rs.getString("ingredient_name"),
-                        rs.getDouble("ingredient_price"),
-                        CategoryEnum.valueOf(rs.getString("ingredient_category"))
-                );
-                String dishNameResult = rs.getString("dish_name");
-                if (!rs.wasNull()) {
-                    Dish dish = new Dish(
-                            rs.getInt("id_dish"),
-                            dishNameResult,
-                            DishTypeEnum.valueOf(rs.getString("dish_type"))
+                List<Ingredients> ingredients = new ArrayList<>();
+                while (rs.next()) {
+                    Ingredients ingredient = new Ingredients(
+                            rs.getInt("ingredient_id"),
+                            rs.getString("ingredient_name"),
+                            rs.getDouble("ingredient_price"),
+                            CategoryEnum.valueOf(rs.getString("ingredient_category"))
                     );
-                    ingredient.setDish(dish);
+                    String dishNameResult = rs.getString("dish_name");
+                    if (!rs.wasNull()) {
+                        Dish dish = new Dish(
+                                rs.getInt("id_dish"),
+                                dishNameResult,
+                                DishTypeEnum.valueOf(rs.getString("dish_type"))
+                        );
+                        ingredient.setDish(dish);
+                    }
+                    ingredients.add(ingredient);
                 }
-                ingredients.add(ingredient);
+                return ingredients;
             }
-            rs.close();
-            ps.close();
-            c.close();
-            return ingredients;
         }
         catch (SQLException e){
             throw new SQLException(e);
