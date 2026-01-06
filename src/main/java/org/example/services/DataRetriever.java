@@ -86,38 +86,38 @@ public class DataRetriever {
                     FROM mini_dish_management_app.Ingredient
                     INNER JOIN  mini_dish_management_app.Dish
                     ON Ingredient.id_dish = Dish.id
-                    OFFSET ? LIMIT ?;
+                    LIMIT ? OFFSET ?;
                 """;
         List<Ingredients> results = new ArrayList<>();
 
-        try (Connection c = dbConn.getConnection()) {
-            PreparedStatement ps = c.prepareStatement(query);
-            ps.setInt(1, page);
-            ps.setInt(2, size);
-            ResultSet rs = ps.executeQuery();
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(query);
+        ) {
+            ps.setInt(1, size);
+            ps.setInt(2, (page - 1) * size);
 
-            while (rs.next()) {
-                Ingredients ingredient = new Ingredients(
-                        rs.getInt("ingredient_id"),
-                        rs.getString("ingredient_name"),
-                        rs.getDouble("ingredient_price"),
-                        CategoryEnum.valueOf(rs.getString("ingredient_category"))
-                );
-                String dishName = rs.getString("dish_name");
-                if (!rs.wasNull()) {
-                    Dish dish = new Dish(
-                            rs.getInt("id_dish"),
-                            dishName,
-                            DishTypeEnum.valueOf(rs.getString("dish_type"))
+            try(ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Ingredients ingredient = new Ingredients(
+                            rs.getInt("ingredient_id"),
+                            rs.getString("ingredient_name"),
+                            rs.getDouble("ingredient_price"),
+                            CategoryEnum.valueOf(rs.getString("ingredient_category"))
                     );
-                    ingredient.setDish(dish);
+                    String dishName = rs.getString("dish_name");
+                    if (!rs.wasNull()) {
+                        Dish dish = new Dish(
+                                rs.getInt("id_dish"),
+                                dishName,
+                                DishTypeEnum.valueOf(rs.getString("dish_type"))
+                        );
+                        ingredient.setDish(dish);
+                    }
+                    results.add(ingredient);
                 }
-                results.add(ingredient);
+                return results;
             }
-            rs.close();
-            ps.close();
-            c.close();
-            return results;
         }
         catch(SQLException e){
             throw new SQLException(e);
