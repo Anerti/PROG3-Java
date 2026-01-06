@@ -22,6 +22,32 @@ public class DataRetriever {
         this.dbConn = dbConn;
     }
 
+    private Dish dishRetriever(ResultSet rs) throws SQLException {
+        Dish dish = null;
+
+        while (rs.next()) {
+            if (dish == null)
+                dish = new Dish(
+                        rs.getInt("dish_id"),
+                        rs.getString("dish_name"),
+                        DishTypeEnum.valueOf(rs.getString("dish_type"))
+                );
+
+            int ingredientId = rs.getInt("ingredient_id");
+            if (!rs.wasNull()) {
+                Ingredients ingredient = new Ingredients(
+                        ingredientId,
+                        rs.getString("ingredient_name"),
+                        rs.getDouble("ingredient_price"),
+                        CategoryEnum.valueOf(rs.getString("ingredient_category"))
+                );
+                ingredient.setDish(dish);
+                dish.addIngredient(ingredient);
+            }
+        }
+        return dish;
+    }
+
     public Dish findDishById(Integer id) throws SQLException {
         final String query =
                 """
@@ -34,7 +60,7 @@ public class DataRetriever {
                 Ingredient.price AS ingredient_price,
                 Ingredient.category AS ingredient_category
                 FROM mini_dish_management_app.Dish
-                LEFT JOIN mini_dish_management_app.Ingredient ON Dish.id = Ingredient.id_dish WHERE Dish.id = ?
+                INNER JOIN mini_dish_management_app.Ingredient ON Dish.id = Ingredient.id_dish WHERE Dish.id = ?
                 """;
         try(
                 Connection c = dbConn.getConnection();
@@ -42,29 +68,7 @@ public class DataRetriever {
         ){
             ps.setInt(1, id);
             try(ResultSet rs = ps.executeQuery()) {
-                Dish dish = null;
-
-                while (rs.next()) {
-                    if (dish == null)
-                        dish = new Dish(
-                                rs.getInt("dish_id"),
-                                rs.getString("dish_name"),
-                                DishTypeEnum.valueOf(rs.getString("dish_type"))
-                        );
-
-                    int ingredientId = rs.getInt("ingredient_id");
-                    if (!rs.wasNull()) {
-                        Ingredients ingredient = new Ingredients(
-                                ingredientId,
-                                rs.getString("ingredient_name"),
-                                rs.getDouble("ingredient_price"),
-                                CategoryEnum.valueOf(rs.getString("ingredient_category"))
-                        );
-                        ingredient.setDish(dish);
-                        dish.addIngredient(ingredient);
-                    }
-                }
-                return dish;
+                return dishRetriever(rs);
             }
         }
         catch(SQLException e){
@@ -262,7 +266,7 @@ public class DataRetriever {
                     WHERE id_dish IN(
                         SELECT id_dish
                         FROM mini_dish_management_app.Ingredient
-                        WHERE Ingredient.name = ?
+                        WHERE Ingredient.name ILIKE ?
                     );
                 """;
 
@@ -270,33 +274,11 @@ public class DataRetriever {
                 Connection c = dbConn.getConnection();
                 PreparedStatement ps = c.prepareStatement(query)
         ){
-            ps.setString(1, IngredientName);
+            ps.setString(1, String.format("%%%s%%", IngredientName));
+            List<Dish> dishesToReturn = new ArrayList<>();
 
             try(ResultSet rs = ps.executeQuery()) {
-                List<Dish> dishesToReturn = new ArrayList<>();
-                Dish dish = null;
-
-                while (rs.next()) {
-                    if (dish == null)
-                        dish = new Dish(
-                                rs.getInt("dish_id"),
-                                rs.getString("dish_name"),
-                                DishTypeEnum.valueOf(rs.getString("dish_type"))
-                        );
-
-                    int ingredientId = rs.getInt("ingredient_id");
-                    if (!rs.wasNull()) {
-                        Ingredients ingredient = new Ingredients(
-                                ingredientId,
-                                rs.getString("ingredient_name"),
-                                rs.getDouble("ingredient_price"),
-                                CategoryEnum.valueOf(rs.getString("ingredient_category"))
-                        );
-                        ingredient.setDish(dish);
-                        dish.addIngredient(ingredient);
-                    }
-                }
-                dishesToReturn.add(dish);
+                dishesToReturn.add(dishRetriever(rs));
                 return dishesToReturn;
             }
         }
