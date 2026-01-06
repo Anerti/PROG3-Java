@@ -201,18 +201,20 @@ public class DataRetriever {
     }
 
     private void UpdateAndInsertQueryHandlerOnSaveDishMethod(String query, int  id, DishTypeEnum dishType, String dishName) throws SQLException {
-        try (Connection c = dbConn.getConnection()) {
-            PreparedStatement ps = c.prepareStatement(query);
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(query)
+        ) {
             ps.setInt(1, id);
             ps.setString(2, String.valueOf(dishType));
             ps.setString(3, dishName);
             ps.executeUpdate();
-            ps.close();
         }
         catch(SQLException e){
             throw new SQLException(e);
         }
     }
+
     public Dish saveDish(Dish dishToSave) throws SQLException {
         Set<String> savedDish = new HashSet<String>(getAllDishNames());
 
