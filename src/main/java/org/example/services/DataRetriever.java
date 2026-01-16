@@ -26,12 +26,15 @@ public class DataRetriever {
         Dish dish = null;
 
         while (rs.next()) {
-            if (dish == null)
+            if (dish == null) {
                 dish = new Dish(
                         rs.getInt("dish_id"),
                         rs.getString("dish_name"),
-                        DishTypeEnum.valueOf(rs.getString("dish_type"))
+                        DishTypeEnum.valueOf(rs.getString("dish_type")),
+                        rs.getDouble("dish_price")
                 );
+                if (rs.wasNull()) dish.setSellPrice(null);
+            }
 
             int ingredientId = rs.getInt("ingredient_id");
             if (!rs.wasNull()) {
@@ -55,12 +58,13 @@ public class DataRetriever {
                 Dish.id AS dish_id,
                 Dish.name AS dish_name,
                 Dish.dish_type,
+                Dish.price AS dish_price,
                 Ingredient.id AS ingredient_id,
                 Ingredient.name AS ingredient_name,
                 Ingredient.price AS ingredient_price,
                 Ingredient.category AS ingredient_category
                 FROM mini_dish_management_app.Dish
-                INNER JOIN mini_dish_management_app.Ingredient ON Dish.id = Ingredient.id_dish WHERE Dish.id = ?
+                LEFT JOIN mini_dish_management_app.Ingredient ON Dish.id = Ingredient.id_dish WHERE Dish.id = ?
                 """;
         try(
                 Connection c = dbConn.getConnection();
@@ -90,8 +94,10 @@ public class DataRetriever {
                 Dish dish = new Dish(
                         rs.getInt("id_dish"),
                         dishName,
-                        DishTypeEnum.valueOf(rs.getString("dish_type"))
+                        DishTypeEnum.valueOf(rs.getString("dish_type")),
+                        rs.getDouble("dish_price")
                 );
+                if (rs.wasNull()) dish.setSellPrice(null);
                 ingredient.setDish(dish);
             }
             results.add(ingredient);
@@ -208,14 +214,15 @@ public class DataRetriever {
         return getAllElementName(query);
     }
 
-    private void UpdateAndInsertQueryHandlerOnSaveDishMethod(String query, int  id, DishTypeEnum dishType, String dishName) throws SQLException {
+    private void UpdateAndInsertQueryHandlerOnSaveDishMethod(String query, int  id, DishTypeEnum dishType, String dishName, double dishPrice) throws SQLException {
         try (
                 Connection c = dbConn.getConnection();
                 PreparedStatement ps = c.prepareStatement(query)
         ) {
             ps.setInt(1, id);
             ps.setString(2, String.valueOf(dishType));
-            ps.setString(3, dishName);
+            ps.setDouble(3, dishPrice);
+            ps.setString(4, dishName);
             ps.executeUpdate();
         }
         catch(SQLException e){
@@ -224,31 +231,32 @@ public class DataRetriever {
     }
 
     public Dish saveDish(Dish dishToSave) throws SQLException {
-        Set<String> savedDish = new HashSet<String>(getAllDishNames());
-
-        if (savedDish.stream().anyMatch(dish -> dish.equals(dishToSave.getName().toLowerCase()))){
+        if (findDishById(dishToSave.getId()) != null){
             UpdateAndInsertQueryHandlerOnSaveDishMethod(
                     """
                                 UPDATE mini_dish_management_app.Dish
                                 SET id = ?,
-                                dish_type = ?::mini_dish_management_app.dish_type
+                                dish_type = ?::mini_dish_management_app.dish_type,
+                                price = ?
                                 WHERE name = ?;
                         """,
                     dishToSave.getId(),
                     dishToSave.getDishType(),
-                    dishToSave.getName()
+                    dishToSave.getName(),
+                    dishToSave.getSellPrice()
             );
             return dishToSave;
         }
 
         UpdateAndInsertQueryHandlerOnSaveDishMethod(
                 """
-                        INSERT INTO mini_dish_management_app.Dish(id, dish_type, name)
-                        VALUES  (?, ?::mini_dish_management_app.dish_type, ?);
+                        INSERT INTO mini_dish_management_app.Dish(id, dish_type, price, name)
+                        VALUES  (?, ?::mini_dish_management_app.dish_type, ?, ?);
                     """,
                 dishToSave.getId(),
                 dishToSave.getDishType(),
-                dishToSave.getName()
+                dishToSave.getName(),
+                dishToSave.getSellPrice()
         );
         return dishToSave;
     }

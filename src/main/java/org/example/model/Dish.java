@@ -10,11 +10,21 @@ public class Dish {
     private final String name;
     private final DishTypeEnum dishType;
     private final List<Ingredients> ingredients = new ArrayList<>();
+    private Double sellPrice;
 
-    public Dish(int id, String name, DishTypeEnum dishType) {
+    public Dish(int id, String name, DishTypeEnum dishType, Double sellPrice) {
         this.id = id;
         this.name = name;
         this.dishType = dishType;
+        this.sellPrice = sellPrice;
+    }
+
+    public void setSellPrice(Double sellPrice) {
+        this.sellPrice = sellPrice;
+    }
+
+    public Double getSellPrice(){
+        return sellPrice;
     }
 
     public int getId() {
@@ -45,11 +55,17 @@ public class Dish {
         }
     }
 
+    public Double getGrossMargin() {
+        if (getSellPrice() == null) throw new IllegalStateException(this.name + " price is is null");
+        if (getSellPrice() <= 0) throw new IllegalStateException(this.name + " price cannot be less than 1");
+        return getSellPrice() - getDishCost();
+    }
+
     public void removeIngredient(Ingredients ingredient) {
         if (ingredients.remove(ingredient)) ingredient.setDish(null);
     }
 
-    public Double getDishPrice() {
+    public Double getDishCost() {
         return ingredients.stream()
                 .mapToDouble(Ingredients::getPrice)
                 .sum();
@@ -74,7 +90,8 @@ public class Dish {
                 ", name='" + name + '\'' +
                 ", dishType=" + dishType +
                 ", ingredients=" + ingredients +
-                ", dishPrice=" + getDishPrice() +
+                ", dishPrice=" + getDishCost() +
+                ", dishSellCost=" + getGrossMargin() +
                 '}';
     }
 }
