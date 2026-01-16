@@ -58,7 +58,7 @@ public class DataRetriever {
                 Dish.id AS dish_id,
                 Dish.name AS dish_name,
                 Dish.dish_type,
-                Dish.price AS dish_price,
+                Dish.selling_price AS dish_price,
                 Ingredient.id AS ingredient_id,
                 Ingredient.name AS ingredient_name,
                 Ingredient.price AS ingredient_price,
@@ -184,7 +184,7 @@ public class DataRetriever {
             final String insertQuery =
                     """
                         INSERT INTO
-                        mini_dish_management_app.Ingredient(id, name, price, category)
+                        mini_dish_management_app.Ingredient(id, name, selling_price, category)
                         VALUES (?, ?, ?, ?::mini_dish_management_app.ingredient_category);
                     """;
 
@@ -237,7 +237,7 @@ public class DataRetriever {
                                 UPDATE mini_dish_management_app.Dish
                                 SET id = ?,
                                 dish_type = ?::mini_dish_management_app.dish_type,
-                                price = ?
+                                selling_price = ?
                                 WHERE name = ?;
                         """,
                     dishToSave.getId(),
@@ -250,7 +250,7 @@ public class DataRetriever {
 
         UpdateAndInsertQueryHandlerOnSaveDishMethod(
                 """
-                        INSERT INTO mini_dish_management_app.Dish(id, dish_type, price, name)
+                        INSERT INTO mini_dish_management_app.Dish(id, dish_type, selling_price, name)
                         VALUES  (?, ?::mini_dish_management_app.dish_type, ?, ?);
                     """,
                 dishToSave.getId(),
