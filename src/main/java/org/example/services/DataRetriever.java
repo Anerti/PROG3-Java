@@ -1,19 +1,14 @@
 package org.example.services;
 
 import org.example.db.DBConnection;
-import org.example.model.CategoryEnum;
-import org.example.model.Dish;
-import org.example.model.DishTypeEnum;
-import org.example.model.Ingredient;
+import org.example.model.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class DataRetriever {
     private final DBConnection dbConn;
@@ -33,7 +28,7 @@ public class DataRetriever {
                         DishTypeEnum.valueOf(rs.getString("dish_type")),
                         rs.getDouble("dish_price")
                 );
-                if (rs.wasNull()) dish.setSellPrice(null);
+                if (rs.wasNull()) dish.setSellingPrice(null);
             }
 
             int ingredientId = rs.getInt("ingredient_id");
@@ -44,8 +39,15 @@ public class DataRetriever {
                         rs.getDouble("ingredient_price"),
                         CategoryEnum.valueOf(rs.getString("ingredient_category"))
                 );
-                ingredient.setDish(dish);
-                dish.addIngredient(ingredient);
+                dish.addDishIngredient(
+                        new DishIngredient(
+                                rs.getInt("dishingredient_id"),
+                                ingredient,
+                                dish,
+                                rs.getDouble("quantity"),
+                                UnitType.valueOf(rs.getString("unit"))
+                        )
+                );
             }
         }
         return dish;
@@ -62,13 +64,22 @@ public class DataRetriever {
                 Ingredient.id AS ingredient_id,
                 Ingredient.name AS ingredient_name,
                 Ingredient.price AS ingredient_price,
-                Ingredient.category AS ingredient_category
-                FROM mini_dish_management_app.Dish
-                LEFT JOIN mini_dish_management_app.Ingredient 
-                ON 
-                Dish.id = Ingredient.id_dish 
-                WHERE 
-                Dish.id = ?
+                Ingredient.category AS ingredient_category,
+                dishingredient.id AS dishingredient_id,
+                dishingredient.quantity_required AS quantity,
+                dishingredient.unit AS unit
+                FROM
+                    mini_dish_management_app.dishingredient
+                INNER JOIN
+                    mini_dish_management_app.Ingredient
+                ON
+                    dishingredient.id_ingredient = Ingredient.id
+                INNER JOIN
+                    mini_dish_management_app.Dish
+                ON
+                    dishingredient.id_dish = Dish.id
+                WHERE
+                    dish.id = ?;
                 """;
         try(
                 Connection c = dbConn.getConnection();
@@ -84,46 +95,58 @@ public class DataRetriever {
         }
     }
 
-    private List<Ingredient> ingredientRetriever(ResultSet rs) throws SQLException {
-        List<Ingredient> results = new ArrayList<>();
+    private List<DishIngredient> ingredientRetriever(ResultSet rs) throws SQLException {
+        List<DishIngredient> results = new ArrayList<>();
         while (rs.next()) {
-            Ingredient ingredient = new Ingredient(
+            DishIngredient dishINgredient = new DishIngredient(
                     rs.getInt("ingredient_id"),
-                    rs.getString("ingredient_name"),
-                    rs.getDouble("ingredient_price"),
-                    CategoryEnum.valueOf(rs.getString("ingredient_category"))
+                    new Ingredient(
+                            rs.getInt("ingredient_id"),
+                            rs.getString("ingredient_name"),
+                            rs.getDouble("ingredient_price"),
+                            CategoryEnum.valueOf(rs.getString("ingredient_category"))
+                    ),
+                    new Dish(
+                            rs.getInt("dish_id"),
+                            rs.getString("dish_name"),
+                            DishTypeEnum.valueOf(rs.getString("dish_type")),
+                            rs.getDouble("dish_price")
+                    ),
+                    rs.getDouble("quantity"),
+                    UnitType.valueOf(rs.getString("unit"))
             );
-            String dishName = rs.getString("dish_name");
-            if (!rs.wasNull()) {
-                Dish dish = new Dish(
-                        rs.getInt("id_dish"),
-                        dishName,
-                        DishTypeEnum.valueOf(rs.getString("dish_type")),
-                        rs.getDouble("dish_price")
-                );
-                if (rs.wasNull()) dish.setSellPrice(null);
-                ingredient.setDish(dish);
-            }
-            results.add(ingredient);
+            results.add(dishINgredient);
         }
         return results;
     }
 
-    public List<Ingredient> findIngredients(int page, int size) throws SQLException {
+    public List<DishIngredient> findDishIngredients(int page, int size) throws SQLException {
         final String query =
                 """
-                    SELECT
-                    Ingredient.id AS ingredient_id,
-                    Ingredient.name AS ingredient_name,
-                    Ingredient.price AS ingredient_price,
-                    Ingredient.category AS ingredient_category,
-                    Ingredient.id_dish,
-                    Dish.name AS dish_name,
-                    Dish.dish_type
-                    FROM mini_dish_management_app.Ingredient
-                    INNER JOIN  mini_dish_management_app.Dish
-                    ON Ingredient.id_dish = Dish.id
-                    LIMIT ? OFFSET ?;
+                SELECT
+                Dish.id AS dish_id,
+                Dish.name AS dish_name,
+                Dish.dish_type,
+                Dish.selling_price AS dish_price,
+                Ingredient.id AS ingredient_id,
+                Ingredient.name AS ingredient_name,
+                Ingredient.price AS ingredient_price,
+                Ingredient.category AS ingredient_category,
+                dishingredient.id AS dishingredient_id,
+                dishingredient.quantity_required AS quantity,
+                dishingredient.unit AS unit
+                FROM
+                    mini_dish_management_app.dishingredient
+                INNER JOIN
+                    mini_dish_management_app.Ingredient
+                ON
+                    dishingredient.id_ingredient = Ingredient.id
+                INNER JOIN
+                    mini_dish_management_app.Dish
+                ON
+                    dishingredient.id_dish = Dish.id
+                LIMIT ?
+                OFFSET ?;
                 """;
 
         try (
@@ -141,7 +164,7 @@ public class DataRetriever {
             throw new SQLException(e);
         }
     }
-
+/*
     private List<String> getAllElementName(String query) throws SQLException {
         List<String> output = new ArrayList<>();
         try (
@@ -264,26 +287,34 @@ public class DataRetriever {
         );
         return dishToSave;
     }
-
-    public List<Dish> findDishsByIngredientName(String IngredientName) throws SQLException {
+*/
+    public List<Dish> findDishesByIngredientName(String IngredientName) throws SQLException {
         final String query =
                 """
                     SELECT
-                    Dish.id AS dish_id,
-                    Dish.name AS dish_name,
-                    Dish.dish_type,
+                    dish.id AS dish_id,
+                    dish.name AS dish_name,
+                    dish.dish_type,
+                    dish.selling_price AS dish_price,
                     Ingredient.id AS Ingredient_id,
                     Ingredient.name AS ingredient_name,
                     Ingredient.price AS ingredient_price,
-                    Ingredient.category AS ingredient_category
-                    FROM mini_dish_management_app.Dish
-                    INNER JOIN mini_dish_management_app.Ingredient
-                    ON Dish.id = Ingredient.id_dish
-                    WHERE id_dish IN(
-                        SELECT id_dish
-                        FROM mini_dish_management_app.Ingredient
-                        WHERE Ingredient.name ILIKE ?
-                    );
+                    Ingredient.category AS ingredient_category,
+                    dishingredient.id AS dishingredient_id,
+                    dishingredient.quantity_required AS quantity,
+                    dishingredient.unit AS unit
+                    FROM
+                        mini_dish_management_app.dishingredient
+                    INNER JOIN
+                        mini_dish_management_app.Ingredient
+                    ON
+                        dishingredient.id_ingredient = Ingredient.id
+                    INNER JOIN
+                        mini_dish_management_app.dish
+                    ON
+                        dish.id = dishingredient.id_dish
+                    WHERE
+                        dish.name ILIKE ?;
                 """;
 
         try(
@@ -302,21 +333,31 @@ public class DataRetriever {
             throw new SQLException(e);
         }
     }
-
-    public List<Ingredient> findIngredientsByCriteria(String ingredientName, CategoryEnum category, String dishName, int page, int size) throws SQLException {
+    public List<DishIngredient> findDishIngredientsByCriteria(String ingredientName, CategoryEnum category, String dishName, int page, int size) throws SQLException {
         StringBuilder query = new StringBuilder(
     """
         SELECT
-            Ingredient.id AS ingredient_id,
+            dish.id AS dish_id,
+            dish.name AS dish_name,
+            dish.dish_type,
+            dish.selling_price AS dish_price,
+            Ingredient.id AS Ingredient_id,
             Ingredient.name AS ingredient_name,
             Ingredient.price AS ingredient_price,
             Ingredient.category AS ingredient_category,
-            Dish.id AS id_dish,
-            Dish.name AS dish_name,
-            Dish.dish_type AS dish_type
-        FROM mini_dish_management_app.Ingredient
-        INNER JOIN mini_dish_management_app.Dish
-            ON Dish.id = Ingredient.id_dish
+            dishingredient.id AS dishingredient_id,
+            dishingredient.quantity_required AS quantity,
+            dishingredient.unit AS unit
+        FROM
+            mini_dish_management_app.dishingredient
+        INNER JOIN
+            mini_dish_management_app.Dish
+        ON
+            Dish.id = dishingredient.id_dish
+        INNER JOIN
+            mini_dish_management_app.ingredient
+        ON
+            ingredient.id = dishingredient.id_ingredient
         WHERE 1=1
     """);
 
