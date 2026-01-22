@@ -21,3 +21,4 @@ VALUES (1, 1, 1, 0.20, 'KG'),
        (4, 4, 4, 0.30, 'KG'),
        (5, 4, 5, 0.20, 'KG');
 
+ALTER TABLE mini_dish_management_app.ingredient DROP COLUMN IF EXISTS id_dish;

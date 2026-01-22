@@ -2,7 +2,7 @@ package org.example.model;
 
 import java.util.Objects;
 
-public class Ingredients {
+public class Ingredient {
 
     private final int id;
     private final String name;
@@ -10,7 +10,7 @@ public class Ingredients {
     private final CategoryEnum category;
     private Dish dish;
 
-    public Ingredients(int id, String name, Double price, CategoryEnum category) {
+    public Ingredient(int id, String name, Double price, CategoryEnum category) {
         this.id = id;
         this.name = name;
         this.price = price != null ? price : 0.0;
@@ -60,7 +60,7 @@ public class Ingredients {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Ingredients that)) return false;
+        if (!(o instanceof Ingredient that)) return false;
         return id == that.id;
     }
 

@@ -4,7 +4,7 @@ import org.example.db.DBConnection;
 import org.example.model.CategoryEnum;
 import org.example.model.Dish;
 import org.example.model.DishTypeEnum;
-import org.example.model.Ingredients;
+import org.example.model.Ingredient;
 import org.example.services.DataRetriever;
 
 import java.sql.SQLException;

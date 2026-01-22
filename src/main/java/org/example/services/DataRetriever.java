@@ -4,7 +4,7 @@ import org.example.db.DBConnection;
 import org.example.model.CategoryEnum;
 import org.example.model.Dish;
 import org.example.model.DishTypeEnum;
-import org.example.model.Ingredients;
+import org.example.model.Ingredient;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -38,7 +38,7 @@ public class DataRetriever {
 
             int ingredientId = rs.getInt("ingredient_id");
             if (!rs.wasNull()) {
-                Ingredients ingredient = new Ingredients(
+                Ingredient ingredient = new Ingredient(
                         ingredientId,
                         rs.getString("ingredient_name"),
                         rs.getDouble("ingredient_price"),
@@ -64,7 +64,11 @@ public class DataRetriever {
                 Ingredient.price AS ingredient_price,
                 Ingredient.category AS ingredient_category
                 FROM mini_dish_management_app.Dish
-                LEFT JOIN mini_dish_management_app.Ingredient ON Dish.id = Ingredient.id_dish WHERE Dish.id = ?
+                LEFT JOIN mini_dish_management_app.Ingredient 
+                ON 
+                Dish.id = Ingredient.id_dish 
+                WHERE 
+                Dish.id = ?
                 """;
         try(
                 Connection c = dbConn.getConnection();
@@ -80,10 +84,10 @@ public class DataRetriever {
         }
     }
 
-    private List<Ingredients> ingredientRetriever(ResultSet rs) throws SQLException {
-        List<Ingredients> results = new ArrayList<>();
+    private List<Ingredient> ingredientRetriever(ResultSet rs) throws SQLException {
+        List<Ingredient> results = new ArrayList<>();
         while (rs.next()) {
-            Ingredients ingredient = new Ingredients(
+            Ingredient ingredient = new Ingredient(
                     rs.getInt("ingredient_id"),
                     rs.getString("ingredient_name"),
                     rs.getDouble("ingredient_price"),
@@ -105,7 +109,7 @@ public class DataRetriever {
         return results;
     }
 
-    public List<Ingredients> findIngredients(int page, int size) throws SQLException {
+    public List<Ingredient> findIngredients(int page, int size) throws SQLException {
         final String query =
                 """
                     SELECT
@@ -169,18 +173,18 @@ public class DataRetriever {
         return getAllElementName(query);
     }
 
-    public List<Ingredients> createIngredients(List<Ingredients> newIngredients) throws SQLException {
+    public List<Ingredient> createIngredients(List<Ingredient> newIngredients) throws SQLException {
         if (newIngredients == null || newIngredients.isEmpty())
             throw new IllegalArgumentException("newIngredients must not be empty");
 
 
         Set<String> savedIngredients = new HashSet<>(getAllIngredientsName());
-        for (Ingredients ingredient : newIngredients) {
+        for (Ingredient ingredient : newIngredients) {
             if (savedIngredients.contains(ingredient.getName().toLowerCase()))
                 throw new IllegalArgumentException(String.format("Ingredient %s already exist", ingredient.getName()));
         }
 
-        for (Ingredients ingredient : newIngredients) {
+        for (Ingredient ingredient : newIngredients) {
             final String insertQuery =
                     """
                         INSERT INTO
@@ -299,7 +303,7 @@ public class DataRetriever {
         }
     }
 
-    public List<Ingredients> findIngredientsByCriteria(String ingredientName, CategoryEnum category, String dishName, int page, int size) throws SQLException {
+    public List<Ingredient> findIngredientsByCriteria(String ingredientName, CategoryEnum category, String dishName, int page, int size) throws SQLException {
         StringBuilder query = new StringBuilder(
     """
         SELECT

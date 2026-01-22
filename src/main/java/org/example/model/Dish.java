@@ -9,7 +9,7 @@ public class Dish {
     private final int id;
     private final String name;
     private final DishTypeEnum dishType;
-    private final List<Ingredients> ingredients = new ArrayList<>();
+    private final List<Ingredient> ingredients = new ArrayList<>();
     private Double sellPrice;
 
     public Dish(int id, String name, DishTypeEnum dishType, Double sellPrice) {
@@ -39,11 +39,11 @@ public class Dish {
         return dishType;
     }
 
-    public List<Ingredients> getIngredients() {
+    public List<Ingredient> getIngredients() {
         return ingredients;
     }
 
-    public void addIngredient(Ingredients ingredient) {
+    public void addIngredient(Ingredient ingredient) {
         if (ingredient == null) throw new NullPointerException("ingredient is null");
 
         if (ingredient.getDish() != null && ingredient.getDish() != this)
@@ -61,13 +61,13 @@ public class Dish {
         return getSellPrice() - getDishCost();
     }
 
-    public void removeIngredient(Ingredients ingredient) {
+    public void removeIngredient(Ingredient ingredient) {
         if (ingredients.remove(ingredient)) ingredient.setDish(null);
     }
 
     public Double getDishCost() {
         return ingredients.stream()
-                .mapToDouble(Ingredients::getPrice)
+                .mapToDouble(Ingredient::getPrice)
                 .sum();
     }
 
