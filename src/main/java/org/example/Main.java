@@ -14,13 +14,13 @@ public class Main {
         DBConnection connection = new DBConnection();
         DataRetriever dr = new DataRetriever(connection);
 
-        //System.out.println(dr.findDishById(1));
+        //System.out.println(dr.findDishById(7));
         //System.out.println(dr.findDishIngredients(1, 3));
         //Ingredients ingredient1 = new Ingredients(6, "Haricot vert", 800.00, CategoryEnum.VEGETABLE);
         //Ingredients ingredient2 = new Ingredients(7, "Lentilles", 1000.00, CategoryEnum.VEGETABLE);
-        //System.out.println(dr.saveDish(new Dish(7, "Canard laqué", DishTypeEnum.MAIN, 20000.00)));
+        System.out.println(dr.saveDish(new Dish(7, "Canard laqué", DishTypeEnum.MAIN, 90000.00)));
         //System.out.println(dr.findDishesByIngredientName("sal"));
-        System.out.println(dr.findDishIngredientsByCriteria("Tomate", null, null, 1, 5));
+        //System.out.println(dr.findDishIngredientsByCriteria("Tomate", null, null, 1, 5));
         //System.out.println(dr.findDishsByIngredientName("choco"));
     }
 }

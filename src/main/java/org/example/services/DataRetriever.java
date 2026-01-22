@@ -240,54 +240,34 @@ public class DataRetriever {
                 """;
         return getAllElementName(query);
     }
+*/
 
-    private void UpdateAndInsertQueryHandlerOnSaveDishMethod(String query, int  id, DishTypeEnum dishType, String dishName, double dishPrice) throws SQLException {
+    public Dish saveDish(Dish dish) throws SQLException {
+        final String query =
+        """
+            INSERT INTO mini_dish_management_app.Dish (id, dish_type, selling_price, name)
+            VALUES (?, ?::mini_dish_management_app.dish_type, ?, ?)
+            ON CONFLICT (id) DO UPDATE
+            SET
+                dish_type = EXCLUDED.dish_type,
+                selling_price = EXCLUDED.selling_price,
+                name = EXCLUDED.name;
+        """;
         try (
                 Connection c = dbConn.getConnection();
                 PreparedStatement ps = c.prepareStatement(query)
         ) {
-            ps.setInt(1, id);
-            ps.setString(2, String.valueOf(dishType));
-            ps.setDouble(3, dishPrice);
-            ps.setString(4, dishName);
+            ps.setInt(1, dish.getId());
+            ps.setString(2, String.valueOf(dish.getDishType()));
+            ps.setDouble(3, dish.getSellingPrice());
+            ps.setString(4, dish.getName());
             ps.executeUpdate();
-        }
-        catch(SQLException e){
+        } catch (SQLException e) {
             throw new SQLException(e);
         }
+        return dish;
     }
 
-    public Dish saveDish(Dish dishToSave) throws SQLException {
-        if (findDishById(dishToSave.getId()) != null){
-            UpdateAndInsertQueryHandlerOnSaveDishMethod(
-                    """
-                                UPDATE mini_dish_management_app.Dish
-                                SET id = ?,
-                                dish_type = ?::mini_dish_management_app.dish_type,
-                                selling_price = ?
-                                WHERE name = ?;
-                        """,
-                    dishToSave.getId(),
-                    dishToSave.getDishType(),
-                    dishToSave.getName(),
-                    dishToSave.getSellPrice()
-            );
-            return dishToSave;
-        }
-
-        UpdateAndInsertQueryHandlerOnSaveDishMethod(
-                """
-                        INSERT INTO mini_dish_management_app.Dish(id, dish_type, selling_price, name)
-                        VALUES  (?, ?::mini_dish_management_app.dish_type, ?, ?);
-                    """,
-                dishToSave.getId(),
-                dishToSave.getDishType(),
-                dishToSave.getName(),
-                dishToSave.getSellPrice()
-        );
-        return dishToSave;
-    }
-*/
     public List<Dish> findDishesByIngredientName(String IngredientName) throws SQLException {
         final String query =
                 """
