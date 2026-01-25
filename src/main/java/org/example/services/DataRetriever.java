@@ -8,7 +8,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DataRetriever {
     private final DBConnection dbConn;
@@ -164,7 +166,7 @@ public class DataRetriever {
             throw new SQLException(e);
         }
     }
-/*
+
     private List<String> getAllElementName(String query) throws SQLException {
         List<String> output = new ArrayList<>();
         try (
@@ -196,10 +198,10 @@ public class DataRetriever {
         return getAllElementName(query);
     }
 
+    /*createIngredients Not tested*/
     public List<Ingredient> createIngredients(List<Ingredient> newIngredients) throws SQLException {
         if (newIngredients == null || newIngredients.isEmpty())
             throw new IllegalArgumentException("newIngredients must not be empty");
-
 
         Set<String> savedIngredients = new HashSet<>(getAllIngredientsName());
         for (Ingredient ingredient : newIngredients) {
@@ -211,7 +213,7 @@ public class DataRetriever {
             final String insertQuery =
                     """
                         INSERT INTO
-                        mini_dish_management_app.Ingredient(id, name, selling_price, category)
+                        mini_dish_management_app.Ingredient(id, name, price, category)
                         VALUES (?, ?, ?, ?::mini_dish_management_app.ingredient_category);
                     """;
 
@@ -231,16 +233,6 @@ public class DataRetriever {
         return newIngredients;
     }
 
-    private List<String> getAllDishNames() throws SQLException {
-        final String query =
-                """
-                    SELECT
-                    Dish.name AS name
-                    FROM mini_dish_management_app.Dish;
-                """;
-        return getAllElementName(query);
-    }
-*/
 
     public Dish saveDish(Dish dish) throws SQLException {
         final String query =
@@ -314,6 +306,40 @@ public class DataRetriever {
         }
     }
     public List<DishIngredient> findDishIngredientsByCriteria(String ingredientName, CategoryEnum category, String dishName, int page, int size) throws SQLException {
+        StringBuilder query = queryBuilder(ingredientName, category, dishName);
+
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(String.valueOf(query))
+        ) {
+            int parameterCount = 1;
+
+            if (ingredientName != null &&  !ingredientName.isBlank()) {
+                ps.setString(parameterCount++, String.format("%%%s%%", ingredientName));
+            }
+            if (category != null) {
+                ps.setString(parameterCount++, String.format("%%%s%%", category));
+            }
+            if (dishName != null && !dishName.isBlank()) {
+                ps.setString(parameterCount++, String.format("%%%s%%", dishName));
+            }
+            if (size < 1) size = 10;
+            ps.setInt(parameterCount++, size);
+
+            if (page < 1) page = 1;
+            ps.setInt(parameterCount,(page - 1) * size);
+
+            try(ResultSet rs = ps.executeQuery()) {
+                return ingredientRetriever(rs);
+            }
+        }
+        catch (SQLException e){
+            throw new SQLException(e);
+        }
+    }
+
+
+    private static StringBuilder queryBuilder(String ingredientName, CategoryEnum category, String dishName) {
         StringBuilder query = new StringBuilder(
     """
         SELECT
@@ -351,34 +377,6 @@ public class DataRetriever {
             query.append(" AND Ingredient.category = ?");
 
         query.append(" LIMIT ? OFFSET ?");
-
-        try (
-                Connection c = dbConn.getConnection();
-                PreparedStatement ps = c.prepareStatement(String.valueOf(query))
-        ) {
-            int parameterCount = 1;
-
-            if (ingredientName != null &&  !ingredientName.isBlank()) {
-                ps.setString(parameterCount++, String.format("%%%s%%", ingredientName));
-            }
-            if (category != null) {
-                ps.setString(parameterCount++, String.format("%%%s%%", category));
-            }
-            if (dishName != null && !dishName.isBlank()) {
-                ps.setString(parameterCount++, String.format("%%%s%%", dishName));
-            }
-            if (size < 1) size = 10;
-            ps.setInt(parameterCount++, size);
-
-            if (page < 1) page = 1;
-            ps.setInt(parameterCount,(page - 1) * size);
-
-            try(ResultSet rs = ps.executeQuery()) {
-                return ingredientRetriever(rs);
-            }
-        }
-        catch (SQLException e){
-            throw new SQLException(e);
-        }
+        return query;
     }
 }
