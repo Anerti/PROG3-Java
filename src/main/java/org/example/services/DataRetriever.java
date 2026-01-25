@@ -234,7 +234,7 @@ public class DataRetriever {
     }
 
 
-    public String attachIngredientsToDish(int id, int ingredientId, int dishId, double quantity, UnitType unit) throws SQLException {
+    public String attachIngredientToDishById(int id, int ingredientId, int dishId, double quantity, UnitType unit) throws SQLException {
         final String query =
                 """
                     INSERT INTO mini_dish_management_app.dishingredient (id, id_dish, id_ingredient, quantity_required, unit)
@@ -257,8 +257,24 @@ public class DataRetriever {
         return "Ingredient attached to dish";
     }
 
-    public List<Ingredient> detachIngredientsToDish(List<String> ingredientsName){
-        throw new RuntimeException("not implemented");
+    public String detachIngredientToDishById(int id_dish, int id_ingredient) throws SQLException {
+        final String query =
+                """
+                        DELETE FROM mini_dish_management_app.dishingredient
+                        WHERE id_dish = ? AND id_ingredient = ?;
+                """;
+        try(
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(query)
+        ) {
+                ps.setInt(1, id_dish);
+                ps.setInt(2, id_ingredient);
+                ps.executeUpdate();
+        }
+        catch (SQLException e){
+            throw new SQLException(e);
+        }
+        return "Ingredient detached to the dish";
     }
 
     public Dish saveDish(Dish dish) throws SQLException {

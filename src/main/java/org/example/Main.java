@@ -20,5 +20,6 @@ public class Main {
         //System.out.println(dr.findDishIngredientsByCriteria("Tomate", null, null, 1, 5));
         //System.out.println(dr.findDishsByIngredientName("choco"));
         //System.out.println(dr.attachIngredientsToDish(8, 3, 7, 0.5, UnitType.KG));
+        //System.out.println(dr.detachIngredientToDishById(7, 1));
     }
 }
