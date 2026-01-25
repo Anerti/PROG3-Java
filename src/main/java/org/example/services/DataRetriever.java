@@ -234,6 +234,33 @@ public class DataRetriever {
     }
 
 
+    public String attachIngredientsToDish(int id, int ingredientId, int dishId, double quantity, UnitType unit) throws SQLException {
+        final String query =
+                """
+                    INSERT INTO mini_dish_management_app.dishingredient (id, id_dish, id_ingredient, quantity_required, unit)
+                    VALUES (?, ?, ?, ?, ?::mini_dish_management_app.unit_type);
+                """;
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(query)
+        ){
+          ps.setInt(1, id);
+          ps.setInt(2, dishId);
+          ps.setInt(3, ingredientId);
+          ps.setDouble(4, quantity);
+          ps.setString(5, String.valueOf(unit));
+          ps.executeUpdate();
+        }
+        catch (SQLException e){
+            throw new SQLException(e);
+        }
+        return "Ingredient attached to dish";
+    }
+
+    public List<Ingredient> detachIngredientsToDish(List<String> ingredientsName){
+        throw new RuntimeException("not implemented");
+    }
+
     public Dish saveDish(Dish dish) throws SQLException {
         final String query =
         """
