@@ -3,6 +3,7 @@
   <component name="DataSourcePerFileMappings">
     <file url="file://$PROJECT_DIR$/src/main/java/org/example/services/DataRetriever.java" value="065880cc-3a1f-4f12-b17d-43eb835ee8d7" />
     <file url="file://$PROJECT_DIR$/src/sql/data.sql" value="065880cc-3a1f-4f12-b17d-43eb835ee8d7" />
+    <file url="file://$PROJECT_DIR$/src/sql/new_schema.sql" value="065880cc-3a1f-4f12-b17d-43eb835ee8d7" />
     <file url="file://$PROJECT_DIR$/src/sql/schema.sql" value="065880cc-3a1f-4f12-b17d-43eb835ee8d7" />
   </component>
 </project>

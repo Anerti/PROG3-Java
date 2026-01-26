@@ -22,3 +22,16 @@ VALUES (1, 1, 1, 0.20, 'KG'),
        (5, 4, 5, 0.20, 'KG');
 
 ALTER TABLE mini_dish_management_app.ingredient DROP COLUMN IF EXISTS id_dish;
+
+CREATE TYPE mini_dish_management_app.movement_type AS ENUM (
+    'IN', 'OUT'
+    );
+
+CREATE TABLE mini_dish_management_app.StockMovement(
+    id SERIAL PRIMARY KEY,
+    id_ingredient INT NOT NULL,
+    quantity NUMERIC(10, 2) NOT NULL,
+    type mini_dish_management_app.movement_type NOT NULL,
+    unit mini_dish_management_app.unit_type NOT NULL,
+    creation_datetime TIMESTAMP NOT NULL
+);
