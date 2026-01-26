@@ -1,5 +1,8 @@
 package org.example.model;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class Ingredient {
@@ -8,7 +11,7 @@ public class Ingredient {
     private final String name;
     private final Double price;
     private final CategoryEnum category;
-
+    private final List<StockMovement> stockMovementList = new ArrayList<>();
     public Ingredient(int id, String name, Double price, CategoryEnum category) {
         this.id = id;
         this.name = name;
@@ -30,6 +33,14 @@ public class Ingredient {
 
     public CategoryEnum getCategory() {
         return category;
+    }
+
+    public StockValue getStockValueAt(Instant date){
+        for (StockMovement stockMovement : stockMovementList){
+            if(stockMovement.getCreationDatetime().equals(date))
+                return stockMovement.getValue();
+        }
+        throw new IllegalArgumentException("No stock found at " + date);
     }
 
     @Override
