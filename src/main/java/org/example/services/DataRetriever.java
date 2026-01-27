@@ -3,10 +3,8 @@ package org.example.services;
 import org.example.db.DBConnection;
 import org.example.model.*;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -421,5 +419,121 @@ public class DataRetriever {
 
         query.append(" LIMIT ? OFFSET ?");
         return query;
+    }
+
+    public StockValue getStockValueByIngredientId(int ingredientId) throws SQLException {
+        final String sql =
+                """
+                SELECT
+                    sm.id,
+                    sm.id_ingredient,
+                    sm.quantity,
+                    sm.type,
+                    sm.unit,
+                    sm.creation_datetime,
+                    i.id AS ingredient_id,
+                    i.name,
+                    i.price,
+                    i.category
+                FROM
+                    mini_dish_management_app.stockmovement sm
+                INNER JOIN
+                    mini_dish_management_app.ingredient i
+                    ON i.id = sm.id_ingredient
+                WHERE
+                    i.id = ?
+                """;
+
+        Ingredient ingredient = null;
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(sql)
+        ) {
+
+            ps.setInt(1, ingredientId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    if (ingredient == null){
+                        ingredient = new Ingredient(
+                                rs.getInt("ingredient_id"),
+                                rs.getString("name"),
+                                rs.getDouble("price"),
+                                CategoryEnum.valueOf(rs.getString("category"))
+                        );
+                    }
+                    StockMovement sm = new StockMovement(
+                            rs.getInt("id"),
+                            new StockValue(
+                                    rs.getDouble("quantity"),
+                                    UnitType.valueOf(rs.getString("unit"))
+                            ),
+                            MovementTypeEnum.valueOf(rs.getString("type")),
+                            rs.getTimestamp("creation_datetime").toInstant()
+                    );
+                    ingredient.addStockMovement(sm);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new SQLException(e);
+        }
+        return ingredient.getStockValueAt(Instant.now());
+    }
+    public Ingredient saveIngredient(Ingredient toSave) throws SQLException {
+        final String query =
+                """
+                    INSERT INTO mini_dish_management_app.Ingredient
+                        (id, name, price, category)
+                    VALUES (?, ?, ?, ?::mini_dish_management_app.ingredient_category)
+                    ON CONFLICT (id) DO NOTHING
+                """;
+
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(query)
+        ) {
+            ps.setInt(1, toSave.getId());
+            ps.setString(2, toSave.getName());
+            ps.setDouble(3, toSave.getPrice());
+            ps.setString(4, toSave.getCategory().toString());
+            ps.executeUpdate();
+            saveStockMovements(toSave);
+        }
+        catch (SQLException e){
+            throw new SQLException(e);
+        }
+
+        return toSave;
+    }
+
+    private void saveStockMovements(Ingredient ingredient) throws SQLException {
+        final String query =
+                """
+                    INSERT INTO mini_dish_management_app.StockMovement
+                        (id, id_ingredient, quantity, unit, type, creation_datetime)
+                    VALUES (?, ?, ?, ?::mini_dish_management_app.unit_type, ?::mini_dish_management_app.movement_type, ?)
+                    ON CONFLICT (id) DO NOTHING;
+                """;
+        List<StockMovement> movements = ingredient.getStockMovementList();
+
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(query)
+        ) {
+            for (StockMovement mv : movements) {
+                ps.setInt(1, mv.getId());
+                ps.setInt(2, ingredient.getId());
+                ps.setDouble(3, mv.getValue().getQuantity());
+                ps.setString(4, mv.getValue().getUnit().toString());
+                ps.setString(5, mv.getType().toString());
+                ps.setTimestamp(6, Timestamp.from(mv.getCreationDatetime()));
+                ps.addBatch();
+            }
+
+            ps.executeBatch();
+        }
+        catch (SQLException e){
+            throw new SQLException(e);
+        }
     }
 }

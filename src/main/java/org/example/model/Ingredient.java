@@ -35,12 +35,30 @@ public class Ingredient {
         return category;
     }
 
-    public StockValue getStockValueAt(Instant date){
-        for (StockMovement stockMovement : stockMovementList){
-            if(stockMovement.getCreationDatetime().equals(date))
-                return stockMovement.getValue();
+    public void addStockMovement(StockMovement newStockMovement){
+        this.stockMovementList.add(newStockMovement);
+    }
+
+    public List<StockMovement> getStockMovementList() {
+        return stockMovementList;
+    }
+
+    public StockValue getStockValueAt(Instant date) {
+        if (stockMovementList.isEmpty()) {
+            throw new IllegalArgumentException("Ingredient has no stock movements");
         }
-        throw new IllegalArgumentException("No stock found at " + date);
+
+        UnitType unit = stockMovementList.getFirst().getValue().getUnit();
+
+        double total = 0.0;
+        for (StockMovement mv : stockMovementList) {
+            if (!mv.getCreationDatetime().isAfter(date)) {
+                double qty = mv.getValue().getQuantity();
+                total += (mv.getType() == MovementTypeEnum.IN) ? qty : -qty;
+            }
+        }
+
+        return new StockValue(total, unit);
     }
 
     @Override
@@ -62,6 +80,7 @@ public class Ingredient {
                 ", name='" + name + '\'' +
                 ", price=" + price +
                 ", category=" + category +
+                ", stockMovementList=" + stockMovementList +
                 '}';
     }
 }
