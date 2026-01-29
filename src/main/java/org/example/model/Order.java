@@ -9,13 +9,12 @@ public class Order {
     private final int id;
     private final String reference;
     private final Instant creationDateTime;
-    private final List<DishOrder> dishOrders;
+    private List<DishOrder> dishOrders = new ArrayList<>();
 
     public Order(int id, String reference, Instant creationDateTime){
         this.id = id;
         this.reference = reference;
         this.creationDateTime = creationDateTime;
-        this.dishOrders = new ArrayList<>();
     }
 
     public int getId() {
@@ -32,6 +31,10 @@ public class Order {
 
     public List<DishOrder> getDishOrders() {
         return dishOrders;
+    }
+
+    public void setDishOrder(List<DishOrder> newDishOrder){
+        dishOrders = newDishOrder;
     }
 
     public Double getTotalAmountWithoutVAT(){

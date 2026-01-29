@@ -5,10 +5,7 @@ import org.example.model.*;
 
 import java.sql.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class DataRetriever {
     private final DBConnection dbConn;
@@ -479,6 +476,7 @@ public class DataRetriever {
         }
         return ingredient.getStockValueAt(Instant.now());
     }
+
     public Ingredient saveIngredient(Ingredient toSave) throws SQLException {
         final String query =
                 """
@@ -534,6 +532,189 @@ public class DataRetriever {
         }
         catch (SQLException e){
             throw new SQLException(e);
+        }
+    }
+
+    private void createOrder(Order orderToSave) throws SQLException {
+        final String insertOrderSql =
+                """
+                INSERT INTO mini_dish_management_app."order"
+                    (id, reference, creation_datetime)
+                VALUES (?, ?, ?);
+                """;
+
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(insertOrderSql)
+        ) {
+
+            ps.setInt(1, orderToSave.getId());
+            ps.setString(2, orderToSave.getReference());
+            ps.setTimestamp(3, Timestamp.from(orderToSave.getCreationDateTime()));
+
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new SQLException(e);
+        }
+    }
+
+    private void createDishOrder(Order orderToSave) throws SQLException {
+        final String insertDishOrderSql =
+                """
+                INSERT INTO mini_dish_management_app.dish_order
+                    (id_order, id_dish, quantity)
+                VALUES (?, ?, ?);
+                """;
+
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(insertDishOrderSql)
+        ) {
+
+            for (DishOrder dishOrder : orderToSave.getDishOrders()) {
+                ps.setInt(1, orderToSave.getId());
+                ps.setInt(2, dishOrder.getDish().getId());
+                ps.setInt(3, dishOrder.getQuantity());
+                ps.addBatch();
+            }
+
+            ps.executeBatch();
+        } catch (SQLException e) {
+            throw new SQLException(e);
+        }
+    }
+
+    public Order saveOrder(Order orderToSave) throws SQLException {
+        Map<Integer, Double> requiredQuantities = new HashMap<>();
+
+        for (DishOrder dishOrder : orderToSave.getDishOrders()) {
+            Dish dish = dishOrder.getDish();
+            int orderedQty = dishOrder.getQuantity();
+
+            for (DishIngredient di : dish.getDishIngredients()) {
+                int ingredientId = di.getIngredient().getId();
+                double qtyPerDish = di.getQuantity();
+                double totalNeeded = qtyPerDish * orderedQty;
+
+                requiredQuantities.merge(ingredientId, totalNeeded, Double::sum);
+            }
+        }
+
+        for (Map.Entry<Integer, Double> entry : requiredQuantities.entrySet()) {
+            int ingredientId = entry.getKey();
+            double needed = entry.getValue();
+
+            StockValue currentStock = getStockValueByIngredientId(ingredientId);
+            double available = currentStock.getQuantity();
+
+            if (available < needed) {
+                String ingredientName = fetchIngredientNameById(ingredientId);
+                throw new IllegalStateException(
+                        "Stock insuffisant pour l’ingrédient " + ingredientName + " : "
+                                + "disponible = " + available + " " + currentStock.getUnit()
+                                + ", requis = " + needed + " " + currentStock.getUnit()
+                );
+            }
+        }
+
+        createOrder(orderToSave);
+        createDishOrder(orderToSave);
+
+        return orderToSave;
+    }
+
+    private String fetchIngredientNameById(int ingredientId) throws SQLException {
+        final String sql =
+                """
+                SELECT name
+                FROM mini_dish_management_app.Ingredient
+                WHERE id = ?;
+                """;
+
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(sql)
+        ) {
+
+            ps.setInt(1, ingredientId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString("name");
+                return "ID " + ingredientId;
+            }
+        }
+        catch (SQLException e){
+            throw new SQLException(e);
+        }
+    }
+
+    public Order findOrderByReference(String reference) throws SQLException {
+        final String orderSql =
+                """
+                SELECT
+                    id, reference, creation_datetime
+                FROM mini_dish_management_app.order
+                WHERE reference ILIKE ?;
+                """;
+
+        try (
+                Connection c = dbConn.getConnection();
+                PreparedStatement ps = c.prepareStatement(orderSql)
+        ) {
+
+            ps.setString(1, String.format("%%%s%%", reference));
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (!rs.next()) throw new IllegalArgumentException("reference " + reference + " not found");
+
+                int orderId = rs.getInt("id");
+                String ref = rs.getString("reference");
+                Instant created = rs.getTimestamp("creation_datetime").toInstant();
+
+                Order order = new Order(orderId, ref, created);
+
+                loadDishOrdersForOrder(c, order);
+
+                return order;
+            }
+        }
+    }
+
+    private void loadDishOrdersForOrder(Connection conn, Order order) throws SQLException {
+        final String dishOrderSql =
+                """
+                SELECT
+                    od.id               AS dishorder_id,
+                    od.quantity         AS quantity,
+                    d.id                AS dish_id,
+                    d.name              AS dish_name,
+                    d.dish_type         AS dish_type,
+                    d.selling_price    AS dish_price
+                FROM mini_dish_management_app.dish_order od
+                INNER JOIN mini_dish_management_app.Dish d
+                    ON od.id_dish = d.id
+                WHERE od.id_order = ?;
+                """;
+
+        try (PreparedStatement ps = conn.prepareStatement(dishOrderSql)) {
+            ps.setInt(1, order.getId());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Dish dish = new Dish(
+                            rs.getInt("dish_id"),
+                            rs.getString("dish_name"),
+                            DishTypeEnum.valueOf(rs.getString("dish_type")),
+                            rs.getDouble("dish_price")
+                    );
+
+                    DishOrder dishOrder = new DishOrder(
+                            rs.getInt("dishorder_id"),
+                            dish,
+                            rs.getInt("quantity")
+                    );
+                    order.getDishOrders().add(dishOrder);
+                }
+            }
         }
     }
 }
